@@ -413,11 +413,11 @@ impl CoinGeckoClient {
     ) -> Result<MarketChart, Error> {
         let req = match use_daily_interval {
             true => format!(
-                "/coins/{}/market_chart?vs_currency={}&days={}",
+                "/coins/{}/market_chart?vs_currency={}&days={}&interval=daily",
                 id, vs_currency, days
             ),
             false => format!(
-                "/coins/{}/market_chart?vs_currency={}&days={}&interval=daily",
+                "/coins/{}/market_chart?vs_currency={}&days={}",
                 id, vs_currency, days
             ),
         };
