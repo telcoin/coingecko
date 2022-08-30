@@ -33,9 +33,11 @@ use crate::response::{
     trending::Trending,
 };
 
+#[derive(Clone)]
 /// CoinGecko client
 pub struct CoinGeckoClient {
-    host: &'static str,
+    host: String,
+    api_key: Option<String>,
 }
 
 /// Creates a new CoinGeckoClient with host https://api.coingecko.com/api/v3
@@ -61,16 +63,54 @@ impl CoinGeckoClient {
     /// use coingecko_rs::CoinGeckoClient;
     /// let client = CoinGeckoClient::new("https://some.url");
     /// ```
-    pub fn new(host: &'static str) -> Self {
-        CoinGeckoClient { host }
+    pub fn new(host: &str) -> Self {
+        CoinGeckoClient {
+            host: host.to_owned(),
+            api_key: None,
+        }
+    }
+
+    /// Creates a new CoinGeckoClient pro client with a custom host url and api key
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use coingecko_rs::CoinGeckoClient;
+    /// let pro_client = CoinGeckoClient::new_pro("https://some.url", "api-key-abcd1234");
+    /// ```
+    pub fn new_pro(host: &str, api_key: &str) -> Self {
+        CoinGeckoClient {
+            host: host.to_owned(),
+            api_key: Some(api_key.to_owned()),
+        }
+    }
+
+    /// Creates a new CoinGeckoClient with host https://api.coingecko.com/api/v3
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use coingecko_rs::CoinGeckoClient;
+    /// let client = CoinGeckoClient::default_pro("api-key-abcd1234");
+    /// ```
+    pub fn default_pro(api_key: &str) -> Self {
+        CoinGeckoClient::new_pro("https://pro-api.coingecko.com/api/v3", api_key)
     }
 
     async fn get<R: DeserializeOwned>(&self, endpoint: &str) -> Result<R, Error> {
-        reqwest::get(format!("{host}/{ep}", host = self.host, ep = endpoint))
-            .await?
-            .error_for_status()?
-            .json()
-            .await
+        reqwest::get(match &self.api_key {
+            None => format!("{host}{ep}", host = self.host, ep = endpoint),
+            Some(api_key) => format!(
+                "{host}{ep}&x_cg_pro_api_key={key}",
+                host = self.host,
+                ep = endpoint,
+                key = api_key
+            ),
+        })
+        .await?
+        .error_for_status()?
+        .json()
+        .await
     }
 
     /// Check API server status
